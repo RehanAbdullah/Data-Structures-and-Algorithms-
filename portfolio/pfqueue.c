@@ -1,0 +1,146 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include "queue_int.h"
+
+
+#define RAND_NO_SEED 128475
+#define MAX_BUFF_LEN      3
+#define U1_SND  0
+#define U2_SND  1
+#define P1_RECIEVE  2
+#define P2_RECIEVE  3
+
+
+static int P1_suspended = 0;
+static int P2_suspended = 0;
+static int U1_suspended = 0;
+static int U2_suspended = 0;
+
+int simulated_activity()
+{
+	int r = rand()%99;
+	if (r < 24)
+		return U1_SND;
+	if (r < 49)
+		return U2_SND;
+	if (r < 74)
+		return P1_RECIEVE;
+	else
+		return P2_RECIEVE;
+}
+
+
+static int item = 1;
+int next_item() { return item++; }
+
+
+void printint(int i) { printf("%i",i); }
+
+
+int main(int argc, char **argv)
+{
+	queue_int *buff_12 = new_bounded_queue_int(MAX_BUFF_LEN);
+	queue_int *buff_23 = new_bounded_queue_int(MAX_BUFF_LEN);
+	srand(RAND_NO_SEED);
+	int a;
+	
+	while(1) {
+		sleep(3);
+		
+		if (U1_suspended) printf("\nU1 suspended\n");
+		else              printf("\nU1 active\n");
+		
+		
+		if (U2_suspended) printf("\nU2 suspended\n");
+		else              printf("\nU2 active\n");
+		
+		
+		
+		if (P1_suspended) printf("\nP1 suspended\n");
+		else              printf("\nP1 active\n");
+		
+		printf("buff_12: "); queue_int_print(buff_12,printint);
+		
+		
+		if (P2_suspended) printf("\nP2 suspended\n");
+		else              printf("\nP2 active\n");
+		
+		printf("buff_23: "); queue_int_print(buff_23,printint);
+		
+		
+		a = simulated_activity();
+		printf("\nUser 1 simulated activity: ");
+		if (a==U1_SND) printf("U1_SND\n");
+		else if (a==U2_SND) printf("U2_SND\n");
+		else if (a==P1_RECIEVE) printf("P1_RECIEVE\n");
+		else if (a==P2_RECIEVE) printf("P2_RECIEVE\n");
+		
+		
+		switch(a)
+		{
+		case U1_SND:
+			if (queue_int_isfull(buff_12) && queue_int_isfull(buff_23))
+				{U1_suspended = 1;}
+			else if (queue_int_isfull(buff_12))
+			{
+				U1_suspended = 0;
+				queue_int_enqueue(buff_23, next_item());
+			}
+			else if (queue_int_isfull(buff_23))
+			{
+				U1_suspended = 0;
+				queue_int_enqueue(buff_12, next_item());
+			}
+			else
+			{
+				U1_suspended = 0;
+				queue_int_enqueue(buff_12, next_item());
+			}
+			break;
+			
+		case U2_SND:
+			if (queue_int_isfull(buff_12) && queue_int_isfull(buff_23))
+				{U1_suspended = 1;}
+			else if (queue_int_isfull(buff_12))
+			{
+				U1_suspended = 0;
+				queue_int_enqueue(buff_23, next_item());
+			}
+			else if (queue_int_isfull(buff_23))
+			{
+				U1_suspended = 0;
+				queue_int_enqueue(buff_12, next_item());
+			}
+			else
+			{
+				U1_suspended = 0;
+				queue_int_enqueue(buff_23, next_item());
+			}
+			break;
+			
+		case P1_RECIEVE:
+			if (queue_int_isfull(buff_12)){
+				P1_suspended = 1;
+			queue_int_dequeue(buff_12);}
+			else
+			{
+				P1_suspended = 0;
+				queue_int_enqueue(buff_12,next_item());
+			}
+			break;
+			
+		case P2_RECIEVE:
+			if (queue_int_isfull(buff_23)) {
+				P2_suspended = 1;
+			queue_int_dequeue(buff_23);}
+			else
+			{
+				P2_suspended = 0;
+				queue_int_enqueue(buff_23,next_item());
+			}
+			break;
+		} 
+		
+	}
+	
+}
